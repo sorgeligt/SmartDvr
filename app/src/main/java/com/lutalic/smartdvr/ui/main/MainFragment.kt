@@ -1,13 +1,13 @@
 package com.lutalic.smartdvr.ui.main
 
 import android.Manifest
-import android.content.ContentValues
+import android.annotation.SuppressLint
 import android.content.pm.PackageManager
-import android.icu.text.SimpleDateFormat
+import android.media.Image
 import android.os.Build
 import android.os.Bundle
-import android.provider.MediaStore
 import android.util.Log
+import android.util.Size
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -18,27 +18,21 @@ import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.camera.video.*
 import androidx.core.content.ContextCompat
-import androidx.core.content.PermissionChecker
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import com.lutalic.smartdvr.YUVtoRGB
 import com.lutalic.smartdvr.databinding.FragmentMainBinding
-import java.util.*
-import java.util.concurrent.Executor
 
 
-class MainFragment : Fragment(),ImageAnalysis.Analyzer {
+class MainFragment : Fragment(), ImageAnalysis.Analyzer {
 
-    private var videoCapture: VideoCapture<Recorder>? = null
-    private var recording: Recording? = null
 
     private lateinit var binding: FragmentMainBinding
 
+    private var recordingFlag = false
+
     private val viewModel: MainViewModel by viewModels()
 
-    var translator = YUVtoRGB()
 
     private val requestMultiplePermissions =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
@@ -58,7 +52,9 @@ class MainFragment : Fragment(),ImageAnalysis.Analyzer {
         binding = FragmentMainBinding.inflate(inflater, container, false)
         checkPermissions()
         binding.videoCaptureButton.setOnClickListener { captureVideo() }
-
+        viewModel.saveDone.observe(viewLifecycleOwner) {
+            Toast.makeText(requireActivity(), it + "chel", Toast.LENGTH_SHORT).show()
+        }
         return binding.root
     }
 
@@ -70,85 +66,18 @@ class MainFragment : Fragment(),ImageAnalysis.Analyzer {
         }
     }
 
-    /*private fun requestPermissions() {
-        ActivityCompat.requestPermissions(
-            requireActivity(), REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS
-        )
-    }*/
 
     private fun captureVideo() {
-        val videoCapture = this.videoCapture ?: return
-        Toast.makeText(requireActivity(), "MDAAA", Toast.LENGTH_LONG).show()
-        binding.videoCaptureButton.isEnabled = false
-
-        val curRecording = recording
-        if (curRecording != null) {
-            // Stop the current recording session.
-            curRecording.stop()
-            recording = null
-            return
+        if (recordingFlag) {
+            Toast.makeText(requireActivity(), "Stop $recordingFlag", Toast.LENGTH_SHORT).show()
+            recordingFlag = false
+            viewModel.saveBitmapsInVideo()
+        } else {
+            Toast.makeText(requireActivity(), "Start $recordingFlag", Toast.LENGTH_SHORT).show()
+            recordingFlag = true
         }
-
-        // create and start a new recording session
-        val name = SimpleDateFormat(
-            FILENAME_FORMAT, Locale.US
-        )
-            .format(System.currentTimeMillis())
-        val contentValues = ContentValues().apply {
-            put(MediaStore.MediaColumns.DISPLAY_NAME, name)
-            put(MediaStore.MediaColumns.MIME_TYPE, "video/mp4")
-            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
-                put(MediaStore.Video.Media.RELATIVE_PATH, "Movies/CameraX-Video")
-            }
-
-        }
-
-        val mediaStoreOutputOptions = MediaStoreOutputOptions
-            .Builder(requireActivity().contentResolver, MediaStore.Video.Media.EXTERNAL_CONTENT_URI)
-            .setContentValues(contentValues)
-            .build()
-        recording = videoCapture.output
-            .prepareRecording(requireActivity(), mediaStoreOutputOptions)
-            .apply {
-                if (PermissionChecker.checkSelfPermission(requireActivity(),
-                        Manifest.permission.RECORD_AUDIO) ==
-                    PermissionChecker.PERMISSION_GRANTED)
-                {
-                    withAudioEnabled()
-                }
-            }
-            .start(ContextCompat.getMainExecutor(requireActivity())) { recordEvent ->
-                when(recordEvent) {
-                    is VideoRecordEvent.Start -> {
-                        binding.videoCaptureButton.apply {
-                            text = "stop"
-                            isEnabled = true
-                        }
-                    }
-                    is VideoRecordEvent.Finalize -> {
-                        if (!recordEvent.hasError()) {
-                            val msg = "Video capture succeeded: " +
-                                    "${recordEvent.outputResults.outputUri}"
-                            Toast.makeText(requireActivity().baseContext, msg, Toast.LENGTH_SHORT)
-                                .show()
-                            Log.d(TAG, msg)
-                        } else {
-                            recording?.close()
-                            recording = null
-                            Log.e(TAG, "Video capture ends with error: " +
-                                    "${recordEvent.error}")
-                        }
-                        binding.videoCaptureButton.apply {
-                            text = "start"
-                            isEnabled = true
-                        }
-                    }
-                }
-            }}
-
-    fun getExecutor(): Executor {
-        return ContextCompat.getMainExecutor(requireContext())
     }
+
 
     private fun startCamera() {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(requireActivity())
@@ -163,17 +92,25 @@ class MainFragment : Fragment(),ImageAnalysis.Analyzer {
                 .also {
                     it.setSurfaceProvider(binding.viewFinder.surfaceProvider)
                 }
-
-            val recorder = Recorder.Builder()
-                .setQualitySelector(QualitySelector.from(Quality.HIGHEST))
+            val imageAnalysis = ImageAnalysis.Builder()
+                .setTargetResolution(Size(720, 480))
+                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888)
                 .build()
-            videoCapture = VideoCapture.withOutput(recorder)
-
+            imageAnalysis.setAnalyzer(
+                ContextCompat.getMainExecutor(requireActivity())
+            ) { image ->
+                if (recordingFlag) {
+                    @SuppressLint("UnsafeOptInUsageError")
+                    val img: Image = image.image ?: return@setAnalyzer
+                    viewModel.addBitmapToList(img)
+                }
+                image.close()
+            }
 
 
             // Select back camera as a default
             val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-
 
 
             try {
@@ -182,8 +119,8 @@ class MainFragment : Fragment(),ImageAnalysis.Analyzer {
 
                 // Bind use cases to camera
                 cameraProvider
-                    .bindToLifecycle(this, cameraSelector, preview, videoCapture)
-            } catch(exc: Exception) {
+                    .bindToLifecycle(this, cameraSelector, preview, imageAnalysis)
+            } catch (exc: Exception) {
                 Log.e(TAG, "Use case binding failed", exc)
             }
 
@@ -193,7 +130,10 @@ class MainFragment : Fragment(),ImageAnalysis.Analyzer {
 
     private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
         ContextCompat
-            .checkSelfPermission(requireActivity().baseContext, it) == PackageManager.PERMISSION_GRANTED
+            .checkSelfPermission(
+                requireActivity().baseContext,
+                it
+            ) == PackageManager.PERMISSION_GRANTED
     }
 
 

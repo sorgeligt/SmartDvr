@@ -1,4 +1,4 @@
-package com.lutalic.smartdvr
+package com.lutalic.smartdvr.utils
 
 import android.content.Context
 import android.graphics.Bitmap
