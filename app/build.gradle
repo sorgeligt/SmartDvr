@@ -9,7 +9,7 @@ android {
     defaultConfig {
         applicationId "com.lutalic.smartdvr"
         minSdk 24
-        targetSdk 32
+        targetSdk 30
         versionCode 1
         versionName "1.0"
 
@@ -39,9 +39,9 @@ android {
 }
 
 dependencies {
+    implementation 'com.github.pwittchen:neurosky-android-sdk:0.0.2'
 
-    implementation 'org.jcodec:jcodec:0.2.3'
-    implementation 'org.jcodec:jcodec-android:0.2.3'
+    implementation 'dev.bmcreations:scrcast:0.3.0'
 
 
     def camerax_version = "1.2.0-alpha02"
