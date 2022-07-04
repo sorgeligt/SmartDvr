@@ -3,4 +3,5 @@
     <string name="attention">Attention:</string>
     <string name="meditation">Meditation:</string>
     <string name="heart_rate">Heart rate:</string>
+    <string name="fatigue">Risk of fatigue: Unknown</string>
 </resources>

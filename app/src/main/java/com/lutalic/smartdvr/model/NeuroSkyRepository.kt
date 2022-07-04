@@ -6,6 +6,8 @@ import com.github.pwittchen.neurosky.library.message.enums.BrainWave
 import com.github.pwittchen.neurosky.library.message.enums.Signal
 import com.github.pwittchen.neurosky.library.message.enums.State
 import kotlinx.coroutines.flow.MutableStateFlow
+import java.lang.Double.max
+import java.lang.Double.min
 import java.util.*
 
 class NeuroSkyRepository : BrainRepository {
@@ -13,7 +15,10 @@ class NeuroSkyRepository : BrainRepository {
 
     override val attention: MutableStateFlow<String> = MutableStateFlow("Attention: 0")
     override val meditation: MutableStateFlow<String> = MutableStateFlow("Meditation: 0")
-    override val heartRate: MutableStateFlow<String> = MutableStateFlow("Heart rate: 0")
+    override val fatigue: MutableStateFlow<String> = MutableStateFlow("Risk of fatigue: Unknown")
+
+    var lastAttention = 0
+    var lastMeditation = 0
 
 
     private val neuroSky = NeuroSky(object : ExtendedDeviceMessageListener() {
@@ -26,9 +31,54 @@ class NeuroSkyRepository : BrainRepository {
         }
 
         override fun onBrainWavesChange(brainWaves: Set<BrainWave>) {
-
+            handleBrainWavesChange(brainWaves)
         }
     })
+
+    private fun handleBrainWavesChange(brainWaves: Set<BrainWave>) {
+        if (lastAttention + lastMeditation == 0) {
+            fatigue.value = "Risk of fatigue: Unknown"
+            return
+        }
+        var beta: Double = (-1).toDouble()
+        var alpha: Double = (-1).toDouble()
+        var theta: Double = (-1).toDouble()
+
+        for (brainWave in brainWaves) {
+            when (brainWave) {
+                BrainWave.LOW_BETA -> beta = brainWave.value.toDouble()
+                BrainWave.THETA -> theta = brainWave.value.toDouble()
+                BrainWave.LOW_ALPHA -> alpha = brainWave.value.toDouble()
+            }
+        }
+        val risk: String
+        if (beta < 0 || alpha < 0 || theta < 0) {
+            return
+        } else {
+            val first: Double = beta / alpha
+            val second = (theta + alpha) / beta
+            val valRisk: Double = max(first, second) / min(first, second)
+            risk = if (valRisk < 200) {
+                "Low"
+            } else if (valRisk < 15000) {
+                "Medium"
+            } else if (valRisk < 1000000) {
+                if (Random().nextBoolean()) {
+                    return
+                }
+                "Height"
+            } else {
+                if (Random().nextBoolean()) {
+                    return
+                }
+                if (Random().nextBoolean()) {
+                    return
+                }
+                "Very High"
+            }
+        }
+        fatigue.value = "Risk of fatigue: $risk"
+    }
 
     private fun handleStateChange(state: State) {
         if (state == State.CONNECTED) {
@@ -41,9 +91,14 @@ class NeuroSkyRepository : BrainRepository {
 
     private fun handleSignalChange(signal: Signal) {
         when (signal) {
-            Signal.ATTENTION -> attention.value = getFormattedMessage("attention: %d", signal)
-            Signal.MEDITATION -> meditation.value  = getFormattedMessage("meditation: %d", signal)
-            Signal.HEART_RATE -> heartRate.value  = getFormattedMessage("meditation: %d", signal)
+            Signal.ATTENTION -> {
+                lastAttention = signal.value
+                attention.value = getFormattedMessage("Attention: %d", signal)
+            }
+            Signal.MEDITATION -> {
+                lastMeditation = signal.value
+                meditation.value = getFormattedMessage("Meditation: %d", signal)
+            }
             else -> {}
         }
 
@@ -56,7 +111,7 @@ class NeuroSkyRepository : BrainRepository {
         return String.format(Locale.getDefault(), messageFormat, signal.value)
     }
 
-    override fun connect(){
+    override fun connect() {
         neuroSky.connect()
     }
 

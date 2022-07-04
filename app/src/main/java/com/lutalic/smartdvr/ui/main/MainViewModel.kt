@@ -21,6 +21,6 @@ class MainViewModel : ViewModel() {
 
     val attention = neuroSkyRepository.attention.asLiveData()
     val meditation = neuroSkyRepository.meditation.asLiveData()
-    val heartRate = neuroSkyRepository.heartRate.asLiveData()
+    val fatigue = neuroSkyRepository.fatigue.asLiveData()
 
 }

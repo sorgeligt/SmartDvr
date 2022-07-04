@@ -46,7 +46,7 @@ class MainFragment : Fragment() {
                     showPause = true
                     showTimer = true
                 }
-                startDelayMs = 1_500
+                startDelayMs = 500
                 stopOnScreenOff = true
             }
         }
@@ -71,29 +71,31 @@ class MainFragment : Fragment() {
         binding = FragmentMainBinding.inflate(inflater, container, false)
         checkPermissions()
         recorder.onRecordingComplete {
-            Toast.makeText(requireActivity(), "Video saved in $it", Toast.LENGTH_LONG).show()
+            Toast.makeText(requireActivity(), "Video saved in $it", Toast.LENGTH_SHORT).show()
         }
         binding.videoCaptureButton.setOnClickListener {
             captureVideo()
         }
-        viewModel.attention.observe(viewLifecycleOwner){
+        viewModel.attention.observe(viewLifecycleOwner) {
             binding.attention.text = it
         }
-        viewModel.meditation.observe(viewLifecycleOwner){
+        viewModel.meditation.observe(viewLifecycleOwner) {
             binding.meditation.text = it
         }
-        viewModel.heartRate.observe(viewLifecycleOwner){
-            binding.heartRate.text = it
+        viewModel.fatigue.observe(viewLifecycleOwner) {
+            binding.fatigue.text = it
         }
 
         try {
             viewModel.neuroSkyConnect()
+            Toast.makeText(requireActivity(), "Success connect neuroSky", Toast.LENGTH_LONG).show()
+            viewModel.neuroSkyStart()
+
         } catch (e: BluetoothNotEnabledException) {
             Toast.makeText(requireActivity(), e.message, Toast.LENGTH_LONG).show()
         }
         return binding.root
     }
-
 
     private fun checkPermissions() {
         if (allPermissionsGranted()) {
@@ -107,13 +109,14 @@ class MainFragment : Fragment() {
     private fun captureVideo() {
         if (!recordingFlag) {
             Toast.makeText(requireActivity(), "Recording start!", Toast.LENGTH_SHORT).show()
-            binding.videoCaptureButton.alpha = 0.6f
+            binding.videoCaptureButton.alpha = 0.5f
             recorder.record()
             recordingFlag = true
         } else {
             binding.videoCaptureButton.alpha = 1f
             recorder.stopRecording()
             recordingFlag = false
+            Toast.makeText(requireActivity(), "Recording stop!", Toast.LENGTH_SHORT).show()
         }
     }
 
