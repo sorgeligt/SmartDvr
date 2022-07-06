@@ -1,4 +1,4 @@
-package com.lutalic.smartdvr.ui.main
+package com.lutalic.smartdvr.presentation.main
 
 import android.Manifest
 import android.content.pm.PackageManager
@@ -15,10 +15,12 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
 import com.github.pwittchen.neurosky.library.exception.BluetoothNotEnabledException
+import com.lutalic.smartdvr.R
 import com.lutalic.smartdvr.databinding.FragmentMainBinding
+import com.lutalic.smartdvr.presentation.graph.GraphFragment
 import dev.bmcreations.scrcast.ScrCast
+import org.koin.androidx.viewmodel.ext.android.viewModel
 
 
 class MainFragment : Fragment() {
@@ -27,7 +29,7 @@ class MainFragment : Fragment() {
 
     private var recordingFlag = false
 
-    private val viewModel: MainViewModel by viewModels()
+    private val viewModel: MainViewModel by viewModel()
 
     private val recorder by lazy {
         ScrCast.use(requireActivity()).apply {
@@ -76,6 +78,10 @@ class MainFragment : Fragment() {
         binding.videoCaptureButton.setOnClickListener {
             captureVideo()
         }
+        binding.allInfoAboutBrain.setOnClickListener {
+            parentFragmentManager.beginTransaction().addToBackStack(null)
+                .replace(R.id.container, GraphFragment.newInstance()).commit()
+        }
         viewModel.attention.observe(viewLifecycleOwner) {
             binding.attention.text = it
         }
@@ -86,11 +92,11 @@ class MainFragment : Fragment() {
             binding.fatigue.text = it
         }
 
-        try {
-            viewModel.neuroSkyConnect()
-            Toast.makeText(requireActivity(), "Success connect neuroSky", Toast.LENGTH_LONG).show()
-            viewModel.neuroSkyStart()
 
+        try {
+            viewModel.connect()
+            Toast.makeText(requireActivity(), "Success connect neuroSky", Toast.LENGTH_LONG).show()
+            viewModel.start()
         } catch (e: BluetoothNotEnabledException) {
             Toast.makeText(requireActivity(), e.message, Toast.LENGTH_LONG).show()
         }
@@ -151,7 +157,7 @@ class MainFragment : Fragment() {
 
     override fun onStop() {
         super.onStop()
-        viewModel.neuroSkyDisconnect()
+        viewModel.disconnect()
     }
 
     companion object {

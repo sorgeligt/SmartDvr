@@ -3,7 +3,7 @@ package com.lutalic.smartdvr
 import android.content.pm.ActivityInfo
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import com.lutalic.smartdvr.ui.main.MainFragment
+import com.lutalic.smartdvr.presentation.main.MainFragment
 
 class MainActivity : AppCompatActivity() {
 

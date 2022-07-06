@@ -39,6 +39,13 @@ android {
 }
 
 dependencies {
+    implementation 'com.jjoe64:graphview:4.2.2'
+
+
+    implementation "io.insert-koin:koin-core:3.1.2"
+    implementation "io.insert-koin:koin-android:3.1.2"
+
+
     implementation 'com.github.pwittchen:neurosky-android-sdk:0.0.2'
 
     implementation 'dev.bmcreations:scrcast:0.3.0'

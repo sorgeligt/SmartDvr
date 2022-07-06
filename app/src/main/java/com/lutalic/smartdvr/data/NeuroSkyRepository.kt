@@ -1,24 +1,31 @@
-package com.lutalic.smartdvr.model
+package com.lutalic.smartdvr.data
 
 import com.github.pwittchen.neurosky.library.NeuroSky
 import com.github.pwittchen.neurosky.library.listener.ExtendedDeviceMessageListener
 import com.github.pwittchen.neurosky.library.message.enums.BrainWave
 import com.github.pwittchen.neurosky.library.message.enums.Signal
 import com.github.pwittchen.neurosky.library.message.enums.State
+import com.lutalic.smartdvr.domain.BrainRepository
+import com.lutalic.smartdvr.domain.StatisticsRepository
+import com.lutalic.smartdvr.getCurrentDateWithoutLastSecond
 import kotlinx.coroutines.flow.MutableStateFlow
 import java.lang.Double.max
 import java.lang.Double.min
 import java.util.*
+import kotlin.collections.HashMap
 
-class NeuroSkyRepository : BrainRepository {
+
+class NeuroSkyRepository(
+    private val statisticsRepository: StatisticsRepository
+) : BrainRepository(statisticsRepository) {
 
 
     override val attention: MutableStateFlow<String> = MutableStateFlow("Attention: 0")
     override val meditation: MutableStateFlow<String> = MutableStateFlow("Meditation: 0")
     override val fatigue: MutableStateFlow<String> = MutableStateFlow("Risk of fatigue: Unknown")
 
-    var lastAttention = 0
-    var lastMeditation = 0
+    private var lastAttention = 0
+    private var lastMeditation = 0
 
 
     private val neuroSky = NeuroSky(object : ExtendedDeviceMessageListener() {
@@ -49,6 +56,7 @@ class NeuroSkyRepository : BrainRepository {
                 BrainWave.LOW_BETA -> beta = brainWave.value.toDouble()
                 BrainWave.THETA -> theta = brainWave.value.toDouble()
                 BrainWave.LOW_ALPHA -> alpha = brainWave.value.toDouble()
+                else -> {}
             }
         }
         val risk: String
@@ -62,18 +70,9 @@ class NeuroSkyRepository : BrainRepository {
                 "Low"
             } else if (valRisk < 15000) {
                 "Medium"
-            } else if (valRisk < 1000000) {
-                if (Random().nextBoolean()) {
-                    return
-                }
+            } else if (valRisk < 10000000) {
                 "Height"
             } else {
-                if (Random().nextBoolean()) {
-                    return
-                }
-                if (Random().nextBoolean()) {
-                    return
-                }
                 "Very High"
             }
         }
@@ -93,10 +92,18 @@ class NeuroSkyRepository : BrainRepository {
         when (signal) {
             Signal.ATTENTION -> {
                 lastAttention = signal.value
+                statisticsRepository.addAttention(
+                    getCurrentDateWithoutLastSecond(),
+                    lastAttention.toDouble()
+                )
                 attention.value = getFormattedMessage("Attention: %d", signal)
             }
             Signal.MEDITATION -> {
                 lastMeditation = signal.value
+                statisticsRepository.addMeditation(
+                    getCurrentDateWithoutLastSecond(),
+                    lastMeditation.toDouble()
+                )
                 meditation.value = getFormattedMessage("Meditation: %d", signal)
             }
             else -> {}
@@ -116,6 +123,10 @@ class NeuroSkyRepository : BrainRepository {
     }
 
 
+    override fun disconnect() {
+        neuroSky.disconnect()
+    }
+
     override fun start() {
         neuroSky.startMonitoring()
     }
@@ -124,7 +135,11 @@ class NeuroSkyRepository : BrainRepository {
         neuroSky.stopMonitoring()
     }
 
-    override fun disconnect() {
-        neuroSky.disconnect()
+    override fun getAttentionStatistics(): HashMap<Long, Double> {
+        return statisticsRepository.getAllAttentions()
+    }
+
+    override fun getMeditationStatistics(): Map<Long, Double> {
+        return statisticsRepository.getAllMeditations()
     }
 }
