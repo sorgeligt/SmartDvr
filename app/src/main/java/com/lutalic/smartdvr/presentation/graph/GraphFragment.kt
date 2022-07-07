@@ -35,23 +35,25 @@ class GraphFragment : Fragment() {
     }
 
     private fun initGraph() {
-
         val mCalendar = Calendar.getInstance()
 
         val graph = binding.graph
         val mSeriesGraph: LineGraphSeries<DataPoint> = LineGraphSeries(
             viewModel.getAllAttentionData()
         )
+        mSeriesGraph.title = "Attention"
+        mSeriesGraph.color = Color.RED
 
         graph.addSeries(mSeriesGraph)
         val series2 = LineGraphSeries(
             viewModel.getAllMeditationData()
         )
+        series2.title = "Meditation"
+        series2.color = Color.GREEN;
 
         graph.secondScale.addSeries(series2)
         graph.secondScale.setMinY(0.0);
         graph.secondScale.setMaxY(100.0);
-        series2.color = Color.GREEN;
 
         graph.viewport.isScrollable = true // enables horizontal scrolling
 
@@ -60,7 +62,8 @@ class GraphFragment : Fragment() {
         graph.viewport.isScalable = true // enables horizontal zooming and scrolling
 
         graph.viewport.setScalableY(true) // enables vertical zooming and scrolling
-
+        graph.legendRenderer.isVisible = true;
+        graph.legendRenderer.setFixedPosition(0,0)
 
         graph.gridLabelRenderer.labelFormatter = object : DefaultLabelFormatter() {
             override fun formatLabel(value: Double, isValueX: Boolean): String {
@@ -74,8 +77,7 @@ class GraphFragment : Fragment() {
         }
 
         graph.gridLabelRenderer.numHorizontalLabels = 5
-
-        mSeriesGraph.color = Color.RED
+        graph.title = "Brain statistics graph"
     }
 
     companion object {
