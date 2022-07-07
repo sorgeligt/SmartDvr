@@ -42,6 +42,7 @@ class GraphFragment : Fragment() {
         val mSeriesGraph: LineGraphSeries<DataPoint> = LineGraphSeries(
             viewModel.getAllAttentionData()
         )
+
         graph.addSeries(mSeriesGraph)
         val series2 = LineGraphSeries(
             viewModel.getAllMeditationData()
@@ -75,7 +76,6 @@ class GraphFragment : Fragment() {
         graph.gridLabelRenderer.numHorizontalLabels = 5
 
         mSeriesGraph.color = Color.RED
-
     }
 
     companion object {
