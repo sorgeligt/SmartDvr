@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -21,6 +22,8 @@ import com.lutalic.smartdvr.databinding.FragmentMainBinding
 import com.lutalic.smartdvr.presentation.graph.GraphFragment
 import dev.bmcreations.scrcast.ScrCast
 import org.koin.androidx.viewmodel.ext.android.viewModel
+import kotlin.math.abs
+import kotlin.random.Random
 
 
 class MainFragment : Fragment() {
@@ -92,6 +95,7 @@ class MainFragment : Fragment() {
             binding.fatigue.text = it
         }
 
+        startTimer()
 
         try {
             viewModel.connect()
@@ -101,6 +105,11 @@ class MainFragment : Fragment() {
             Toast.makeText(requireActivity(), e.message, Toast.LENGTH_LONG).show()
         }
         return binding.root
+    }
+
+    private fun startTimer() {
+
+
     }
 
     private fun checkPermissions() {

@@ -1,5 +1,6 @@
 package com.lutalic.smartdvr.data
 
+import android.util.Log
 import com.lutalic.smartdvr.domain.StatisticsRepository
 import com.lutalic.smartdvr.getCurrentDateWithoutLastSecond
 

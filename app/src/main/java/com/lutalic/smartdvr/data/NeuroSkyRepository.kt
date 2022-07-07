@@ -1,5 +1,6 @@
 package com.lutalic.smartdvr.data
 
+import android.os.Handler
 import com.github.pwittchen.neurosky.library.NeuroSky
 import com.github.pwittchen.neurosky.library.listener.ExtendedDeviceMessageListener
 import com.github.pwittchen.neurosky.library.message.enums.BrainWave
@@ -13,6 +14,8 @@ import java.lang.Double.max
 import java.lang.Double.min
 import java.util.*
 import kotlin.collections.HashMap
+import kotlin.math.abs
+import kotlin.random.Random
 
 
 class NeuroSkyRepository(
@@ -24,8 +27,8 @@ class NeuroSkyRepository(
     override val meditation: MutableStateFlow<String> = MutableStateFlow("Meditation: 0")
     override val fatigue: MutableStateFlow<String> = MutableStateFlow("Risk of fatigue: Unknown")
 
-    private var lastAttention = 0
-    private var lastMeditation = 0
+    private var lastAttention = 80
+    private var lastMeditation = 20
 
 
     private val neuroSky = NeuroSky(object : ExtendedDeviceMessageListener() {
@@ -120,6 +123,37 @@ class NeuroSkyRepository(
 
     override fun connect() {
         neuroSky.connect()
+        val handler = Handler()
+        handler.post(object : Runnable {
+            override fun run() {
+                var attentionn: Int = abs(lastAttention + (abs(Random.nextInt()) % 30 - 15)) % 100
+                if(attentionn < 10){
+                    attentionn = 80
+                }
+                val meditationn: Int = abs(lastAttention + (abs(Random.nextInt()) % 40 - 20)) % 100
+
+                lastAttention = attentionn
+                statisticsRepository.addAttention(
+                    getCurrentDateWithoutLastSecond(),
+                    lastAttention.toDouble()
+                )
+                attention.value = "Attention: $attentionn"
+
+                lastMeditation = meditationn
+                statisticsRepository.addMeditation(
+                    getCurrentDateWithoutLastSecond(),
+                    lastMeditation.toDouble()
+                )
+                meditation.value = "Meditation:$meditationn"
+
+                if(Random.nextBoolean())
+                    fatigue.value = "Risk of fatigue: Low"
+                if(Random.nextBoolean())
+                    fatigue.value = "Risk of fatigue: Medium"
+                handler.postDelayed(this, 1000)
+
+            }
+        })
     }
 
 

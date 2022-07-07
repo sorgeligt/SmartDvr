@@ -42,6 +42,7 @@ class GraphFragment : Fragment() {
         val mSeriesGraph: LineGraphSeries<DataPoint> = LineGraphSeries(
             viewModel.getAllAttentionData()
         )
+
         graph.addSeries(mSeriesGraph)
         val series2 = LineGraphSeries(
             viewModel.getAllMeditationData()

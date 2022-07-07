@@ -8,7 +8,7 @@ class GraphViewModel(
     private val brainRepository: BrainRepository
 ) : ViewModel() {
     fun getAllAttentionData(): Array<DataPoint> {
-        val statistics = brainRepository.getAttentionStatistics()
+        val statistics = brainRepository.getAttentionStatistics().toSortedMap()
         val array = mutableListOf<DataPoint>()
         for (statistic in statistics) {
             array.add(DataPoint(statistic.key.toDouble(), statistic.value))
@@ -17,7 +17,7 @@ class GraphViewModel(
     }
 
     fun getAllMeditationData(): Array<DataPoint> {
-        val statistics = brainRepository.getMeditationStatistics()
+        val statistics = brainRepository.getMeditationStatistics().toSortedMap()
         val array = mutableListOf<DataPoint>()
         for (statistic in statistics) {
             array.add(DataPoint(statistic.key.toDouble(), statistic.value))
