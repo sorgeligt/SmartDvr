@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import java.lang.Double.max
 import java.lang.Double.min
 import java.util.*
-import kotlin.collections.HashMap
 import kotlin.math.abs
 import kotlin.random.Random
 
@@ -127,7 +126,7 @@ class NeuroSkyRepository(
         handler.post(object : Runnable {
             override fun run() {
                 var attentionn: Int = abs(lastAttention + (abs(Random.nextInt()) % 30 - 15)) % 100
-                if(attentionn < 10){
+                if (attentionn < 10) {
                     attentionn = 80
                 }
                 val meditationn: Int = abs(lastAttention + (abs(Random.nextInt()) % 40 - 20)) % 100
@@ -146,9 +145,9 @@ class NeuroSkyRepository(
                 )
                 meditation.value = "Meditation:$meditationn"
 
-                if(Random.nextBoolean())
+                if (Random.nextBoolean())
                     fatigue.value = "Risk of fatigue: Low"
-                if(Random.nextBoolean())
+                if (Random.nextBoolean())
                     fatigue.value = "Risk of fatigue: Medium"
                 handler.postDelayed(this, 1000)
 
